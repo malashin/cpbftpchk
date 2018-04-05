@@ -78,6 +78,10 @@ func process(ftp xftp.IFtp, opt *xftp.TConnStruct) {
 			log.Notice("+ ", line)
 			continue
 		}
+		if lookUpFile(line+".part", remoteList) {
+			log.Warning("? ", line)
+			continue
+		}
 		log.Error(true, "- ", line)
 	}
 }
