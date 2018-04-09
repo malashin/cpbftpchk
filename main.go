@@ -20,6 +20,7 @@ var (
 
 	ftp        = xftp.IFtp(nil)
 	remoteList = []xftp.TEntry{}
+	args       = ""
 )
 
 func printStat(opt *xftp.TConnStruct) {
@@ -41,8 +42,20 @@ func reloadList(path string) {
 	log.Info("reading remote directory...")
 	list, err := ftp.List(path)
 	if err != nil {
-		log.Error(err, "ftp.List()")
-		list = []xftp.TEntry{}
+		log.Warning(true, "lost connection")
+		log.Info("reconnecting...")
+		log.Warning(ftp.Quit(), "ftp.Quit()")
+		ftp, err = xftp.New(args)
+		if err != nil {
+			log.Error(err, "xftp.New()")
+			return
+		}
+		log.Info("reading remote directory...")
+		list, err = ftp.List(path)
+		if err != nil {
+			log.Error(err, "ftp.List()")
+			return
+		}
 	}
 	remoteList = list
 }
@@ -92,11 +105,10 @@ func main() {
 
 	log.Add(zlogger.Build().Format("~x~e\n").Styler(zlogger.AnsiStyler).Done())
 
-	arg := ""
 	if len(os.Args) > 1 {
-		arg = os.Args[1]
+		args = os.Args[1]
 	}
-	opt, err := xftp.ParseConnString(arg)
+	opt, err := xftp.ParseConnString(args)
 
 	err = rawin.Start()
 	defer rawin.Stop()
@@ -134,7 +146,8 @@ func main() {
 		return true
 	})
 
-	ftp, err = xftp.New(arg)
+	log.Info("connecting...")
+	ftp, err = xftp.New(args)
 	if err != nil {
 		log.Error(err, "xftp.New()")
 		log.Warning(true, "format:")
