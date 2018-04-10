@@ -72,7 +72,7 @@ func (o *TSftp) List(path string) ([]TEntry, error) {
 	}
 	list := []TEntry{}
 	for _, item := range src {
-		entry := TEntry{Name: item.Name(), Size: item.Size()}
+		entry := TEntry{Name: item.Name(), Size: item.Size(), Time: item.ModTime()}
 		entry.Type = File
 		if item.IsDir() {
 			entry.Type = Folder

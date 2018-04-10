@@ -27,6 +27,7 @@ type IFtp interface {
 type TEntry struct {
 	Name string
 	Size int64
+	Time time.Time
 	Type int
 }
 
@@ -109,6 +110,9 @@ func ParseConnString(conn string) (*TConnStruct, error) {
 	parts := strings.Split(conn, ":")
 	if len(parts) < 3 {
 		return nil, err
+	}
+	if len(parts) < 4 {
+		parts = append(parts, "")
 	}
 
 	idx := strings.LastIndex(parts[password], "@")

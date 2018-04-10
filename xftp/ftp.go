@@ -44,7 +44,7 @@ func (o *TFtp) List(path string) ([]TEntry, error) {
 	}
 	list := []TEntry{}
 	for _, item := range src {
-		entry := TEntry{Name: item.Name, Size: int64(item.Size)}
+		entry := TEntry{Name: item.Name, Size: int64(item.Size), Time: item.Time}
 		switch item.Type {
 		default:
 			entry.Type = Unknown
