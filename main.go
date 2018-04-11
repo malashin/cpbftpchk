@@ -66,7 +66,7 @@ func formatSize(size int64) string {
 		units = units[1:]
 	}
 	rest := size % 1000
-	return fmt.Sprintf("%3v%v %3v", x, units[0:1], rest)
+	return fmt.Sprintf("%3v%v %03v", x, units[0:1], rest)
 }
 
 func formatEntry(entry *xftp.TEntry) string {
