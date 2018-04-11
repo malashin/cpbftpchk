@@ -29,13 +29,48 @@ func printStat(opt *xftp.TConnStruct) {
 	log.Info("-------------------------------------------------")
 }
 
-func lookUpFile(name string, list []xftp.TEntry) bool {
+func lookUpFile(name string, list []xftp.TEntry) *xftp.TEntry {
 	for _, file := range list {
 		if name == file.Name {
-			return true
+			return &file
 		}
 	}
-	return false
+	return nil
+}
+
+func extractFileName(s string) string {
+	idx := strings.IndexFunc(s, func(r rune) bool {
+		return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '.'
+	})
+	if idx < 0 {
+		return ""
+	}
+	res := s[idx:]
+	idx = strings.IndexFunc(res, func(r rune) bool {
+		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '.')
+	})
+	if idx < 0 {
+		idx = len(res)
+	}
+	return res[:idx]
+}
+
+func formatSize(size int64) string {
+	if size < 0 {
+		return "#err size<0"
+	}
+	units := " KMGTPE???"
+	x := size
+	for x >= 1000 {
+		x /= 1000
+		units = units[1:]
+	}
+	rest := size % 1000
+	return fmt.Sprintf("%3v%v %3v", x, units[0:1], rest)
+}
+
+func formatEntry(entry *xftp.TEntry) string {
+	return fmt.Sprintf("%v|%v|%v", entry.Time.Format("06-01-02 15:04"), formatSize(entry.Size), entry.Name)
 }
 
 func reloadList(path string) {
@@ -70,32 +105,21 @@ func process(ftp xftp.IFtp, opt *xftp.TConnStruct) {
 	}
 	lines := strings.Split(text, "\n")
 	for _, line := range lines {
-		idx := strings.IndexFunc(line, func(r rune) bool {
-			return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '.'
-		})
-		if idx < 0 {
-			continue
-		}
-		line = line[idx:]
-		idx = strings.IndexFunc(line, func(r rune) bool {
-			return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '.')
-		})
-		if idx < 0 {
-			idx = len(line)
-		}
-		line = line[:idx]
+		line = extractFileName(line)
 		if line == "" {
 			continue
 		}
-		if lookUpFile(line, remoteList) {
-			log.Notice("+ ", line)
+		entry := lookUpFile(line, remoteList)
+		if entry != nil {
+			log.Notice(formatEntry(entry))
 			continue
 		}
-		if lookUpFile(line+".part", remoteList) {
-			log.Warning(true, "? ", line)
+		entry = lookUpFile(line+".part", remoteList)
+		if entry != nil {
+			log.Warning(true, formatEntry(entry))
 			continue
 		}
-		log.Error(true, "- ", line)
+		log.Error(true, "              |        |", line)
 	}
 }
 
@@ -151,7 +175,7 @@ func main() {
 	if err != nil {
 		log.Error(err, "xftp.New()")
 		log.Warning(true, "format:")
-		log.Warning(true, "    user:pswd@proto://host/path:port")
+		log.Warning(true, "    user:pswd@proto://host/path[:port]")
 		return
 	}
 	defer ftp.Quit()
@@ -162,5 +186,9 @@ func main() {
 	busy = false
 	for !quit {
 		time.Sleep(50 * time.Millisecond)
+		// r, err := rawin.Read()
+		// if err != nil {
+		// }
+		// log.Info(fmt.Sprintf("--- %q", r))
 	}
 }
