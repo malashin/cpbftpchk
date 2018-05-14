@@ -18,9 +18,11 @@ import (
 var (
 	log = zlog.Instance("main")
 
-	ftp        = xftp.IFtp(nil)
-	remoteList = []xftp.TEntry{}
-	args       = ""
+	ftp           = xftp.IFtp(nil)
+	remoteList    = []xftp.TEntry{}
+	args          = ""
+	refreshPeriod = 5 * time.Minute
+	refreshTime   = time.Now()
 )
 
 func printStat(opt *xftp.TConnStruct) {
@@ -70,7 +72,7 @@ func formatSize(size int64) string {
 }
 
 func formatEntry(entry *xftp.TEntry) string {
-	return fmt.Sprintf("%v|%v|%v", entry.Time.Format("06-01-02 15:04"), formatSize(entry.Size), entry.Name)
+	return fmt.Sprintf("%v|%v|%v", entry.Time.Format("2006-01-02 15:04"), formatSize(entry.Size), entry.Name)
 }
 
 func reloadList(path string) {
@@ -95,6 +97,10 @@ func reloadList(path string) {
 	remoteList = list
 }
 
+func weight(a, b, c int) int {
+	return ((a<<9)+b)<<6 + c
+}
+
 func process(ftp xftp.IFtp, opt *xftp.TConnStruct) {
 	if ftp == nil {
 		return
@@ -111,7 +117,16 @@ func process(ftp xftp.IFtp, opt *xftp.TConnStruct) {
 		}
 		entry := lookUpFile(line, remoteList)
 		if entry != nil {
-			log.Notice(formatEntry(entry))
+			y2, m2, d2 := time.Now().Date()
+			y1, m1, d1 := entry.Time.Date()
+
+			pre := ""
+			post := ""
+			if weight(int(y1), int(m1), int(d1)) >= weight(int(y2), int(m2), int(d2)) {
+				pre = "\x1b[36m"
+				post = "\x1b[0m"
+			}
+			log.Notice(pre, formatEntry(entry), post)
 			continue
 		}
 		entry = lookUpFile(line+".part", remoteList)
@@ -162,6 +177,12 @@ func main() {
 	rawin.SetAction('\x13', func(r rune) bool {
 		if !busy {
 			busy = true
+			if time.Since(refreshTime) >= refreshPeriod {
+				refreshTime = time.Now()
+				log.Info("-------------------------------------------------")
+				reloadList(opt.Path)
+				printStat(opt)
+			}
 			process(ftp, opt)
 			log.Info("-------------------------------------------------")
 			printStat(opt)
@@ -175,7 +196,7 @@ func main() {
 	if err != nil {
 		log.Error(err, "xftp.New()")
 		log.Warning(true, "format:")
-		log.Warning(true, "    user:pswd@proto://host/path[:port]")
+		log.Warning(true, "    [proto://][username[:password]@]host/path[:port]")
 		return
 	}
 	defer ftp.Quit()
