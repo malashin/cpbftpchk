@@ -18,11 +18,12 @@ import (
 var (
 	log = zlog.Instance("main")
 
-	ftp           = xftp.IFtp(nil)
-	remoteList    = []xftp.TEntry{}
-	args          = ""
-	refreshPeriod = 5 * time.Minute
-	refreshTime   = time.Now()
+	ftp             = xftp.IFtp(nil)
+	remoteList      = []xftp.TEntry{}
+	args            = ""
+	diffColorPeriod = 12 * time.Hour
+	refreshPeriod   = 5 * time.Minute
+	refreshTime     = time.Now()
 )
 
 func printStat(opt *xftp.TConnStruct) {
@@ -97,10 +98,6 @@ func reloadList(path string) {
 	remoteList = list
 }
 
-func weight(a, b, c int) int {
-	return ((a<<9)+b)<<6 + c
-}
-
 func process(ftp xftp.IFtp, opt *xftp.TConnStruct) {
 	if ftp == nil {
 		return
@@ -117,12 +114,9 @@ func process(ftp xftp.IFtp, opt *xftp.TConnStruct) {
 		}
 		entry := lookUpFile(line, remoteList)
 		if entry != nil {
-			y2, m2, d2 := time.Now().Date()
-			y1, m1, d1 := entry.Time.Date()
-
 			pre := ""
 			post := ""
-			if weight(int(y1), int(m1), int(d1)) >= weight(int(y2), int(m2), int(d2)) {
+			if time.Since(entry.Time) < diffColorPeriod {
 				pre = "\x1b[36m"
 				post = "\x1b[0m"
 			}
