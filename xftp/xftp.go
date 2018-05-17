@@ -165,7 +165,7 @@ func ParseConnString(conn string) (*TConnStruct, error) {
 			cs.Port = node.Value
 		}
 	}
-	fmt.Printf("proto %q\nuser %q\npswd %q\nhost %q\npath %q\nport %q\n", cs.Proto, cs.Username, cs.Password, cs.Host, cs.Path, cs.Port)
+	// fmt.Printf("proto %q\nuser %q\npswd %q\nhost %q\npath %q\nport %q\n", cs.Proto, cs.Username, cs.Password, cs.Host, cs.Path, cs.Port)
 	if cs.Port == "" {
 		switch cs.Proto {
 		case "":
