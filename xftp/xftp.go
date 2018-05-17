@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"time"
 
 	"github.com/jlaffaye/ftp"
@@ -41,21 +42,21 @@ const (
 var urlParser *ptool.TParser
 
 func init() {
-	//[proto://][username[:password]@]host/path[:port]
+	//[proto://][username[:password]@]host[/path][:port]
 	urlRule := "" +
-		"entry = spaces[@proto '://'] [@username[':'@password]'@'] @host '/' @path ['/'] [':'@port] spaces$;" +
+		"entry = spaces [@proto '://'] [@username[':'@password]'@'] @host ['/'@path] ['/'] [':'@port] spaces$;" +
 		"spaces   = {'\x00'..'\x20'};" +
-		"anyRune  = '\x00'..'\xff';" +
+		"anyRune  = !$ '\x00'..'\xff';" +
 		"invalid  = '\x00'..'\x20';" +
 		"digit    = '0'..'9';" +
-		"proto    = {!invalid!':'!$ anyRune};" +
-		"username = {!invalid!':'!'@'!$ anyRune};" +
-		"password = {!invalid!'@'!$ anyRune};" +
+		"proto    = {!invalid!':' anyRune};" +
+		"username = {!invalid!':'!'@' anyRune};" +
+		"password = {!invalid!'@' anyRune};" +
 		"host     = {!invalid!':'!'/' anyRune};" +
 		"path     = {!invalid!':'!'/:'!('/'$) anyRune};" +
 		"port     = digit{digit};"
-	rules := ptool.NewRules()
-	rules.Reset(urlRule)
+
+	rules := ptool.NewRules(urlRule)
 	p, err := rules.Parser()
 	if err != nil {
 		log.Panic(err, "can't compile url parser")
@@ -93,9 +94,22 @@ func New(conn string) (IFtp, error) {
 		config := &ssh.ClientConfig{
 			User: cs.Username,
 			Auth: []ssh.AuthMethod{
+				ssh.KeyboardInteractive(func(user, instruction string, questions []string, echos []bool) ([]string, error) {
+					// Just send the password back for all questions
+					answers := make([]string, len(questions))
+					for i := range answers {
+						answers[i] = cs.Password
+					}
+					return answers, nil
+				}),
+				ssh.PasswordCallback(func() (string, error) { return cs.Password, nil }),
 				ssh.Password(cs.Password),
 			},
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			// HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+				return nil
+			},
+			Timeout: 10 * time.Second,
 			// Config: ssh.Config{
 			// 	//Ciphers: []string{"aes128-cbc"},
 			// 	Ciphers: []string{"3des-cbc", "aes256-cbc", "aes192-cbc", "aes128-cbc"},
@@ -116,10 +130,11 @@ func New(conn string) (IFtp, error) {
 	}
 }
 
-func assignNonEmtpy(to *string, from string) {
-	if len(from) != 0 {
-		*to = from
+func setDefault(val string, def string) string {
+	if val == "" {
+		return def
 	}
+	return val
 }
 
 // TConnStruct -
@@ -129,29 +144,39 @@ type TConnStruct struct {
 
 // ParseConnString -
 func ParseConnString(conn string) (*TConnStruct, error) {
-	cs := TConnStruct{Proto: "ftp", Port: "21"}
-	urlParser.Reset([]byte(conn))
-	tree, err := urlParser.Run()
+	cs := TConnStruct{}
+	tree, err := urlParser.Parse(conn)
 	if err != nil {
 		return nil, err
 	}
 	for _, node := range tree.Links {
 		switch urlParser.ByID(node.Type) {
 		case "proto":
-			assignNonEmtpy(&cs.Proto, node.Value)
+			cs.Proto = node.Value
 		case "username":
-			assignNonEmtpy(&cs.Username, node.Value)
+			cs.Username = node.Value
 		case "password":
-			assignNonEmtpy(&cs.Password, node.Value)
+			cs.Password = node.Value
 		case "host":
-			assignNonEmtpy(&cs.Host, node.Value)
+			cs.Host = node.Value
 		case "path":
-			assignNonEmtpy(&cs.Path, node.Value)
+			cs.Path = node.Value
 		case "port":
-			assignNonEmtpy(&cs.Port, node.Value)
+			cs.Port = node.Value
 		}
 	}
-	// fmt.Printf("proto %q\nuser %q\npswd %q\nhost %q\npath %q\nport %q\n", cs.Proto, cs.Username, cs.Password, cs.Host, cs.Path, cs.Port)
+	fmt.Printf("proto %q\nuser %q\npswd %q\nhost %q\npath %q\nport %q\n", cs.Proto, cs.Username, cs.Password, cs.Host, cs.Path, cs.Port)
+	if cs.Port == "" {
+		switch cs.Proto {
+		case "":
+			cs.Proto = "ftp"
+			cs.Port = "21"
+		case "ftp":
+			cs.Port = "21"
+		case "sftp":
+			cs.Port = "22"
+		}
+	}
 	if cs.Host == "" || cs.Path == "" {
 		return nil, fmt.Errorf("no host or path name")
 	}

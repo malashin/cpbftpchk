@@ -128,7 +128,7 @@ func process(ftp xftp.IFtp, opt *xftp.TConnStruct) {
 			log.Warning(true, formatEntry(entry))
 			continue
 		}
-		log.Error(true, "              |        |", line)
+		log.Error(true, "                |        |", line)
 	}
 }
 
@@ -160,6 +160,7 @@ func main() {
 	rawin.SetAction('\x12', func(r rune) bool {
 		if !busy {
 			busy = true
+			refreshTime = time.Now()
 			log.Info("-------------------------------------------------")
 			reloadList(opt.Path)
 			printStat(opt)
@@ -190,7 +191,7 @@ func main() {
 	if err != nil {
 		log.Error(err, "xftp.New()")
 		log.Warning(true, "format:")
-		log.Warning(true, "    [proto://][username[:password]@]host/path[:port]")
+		log.Warning(true, "    [proto://][username[:password]@]host[/path][:port]")
 		return
 	}
 	defer ftp.Quit()
