@@ -116,7 +116,7 @@ func process(ftp xftp.IFtp, opt *xftp.TConnStruct) {
 		if entry != nil {
 			pre := ""
 			post := ""
-			if time.Since(entry.Time) < diffColorPeriod {
+			if time.Since(entry.Time) > diffColorPeriod {
 				pre = "\x1b[36m"
 				post = "\x1b[0m"
 			}
