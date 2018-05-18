@@ -24,6 +24,7 @@ var (
 	diffColorPeriod = 12 * time.Hour
 	refreshPeriod   = 5 * time.Minute
 	refreshTime     = time.Now()
+	cpbText         = ""
 )
 
 func printStat(opt *xftp.TConnStruct) {
@@ -102,10 +103,7 @@ func process(ftp xftp.IFtp, opt *xftp.TConnStruct) {
 	if ftp == nil {
 		return
 	}
-	text, err := clipboard.ReadAll()
-	if err != nil {
-		log.Error(err, "clipboard.ReadAll()")
-	}
+	text := cpbText
 	lines := strings.Split(text, "\n")
 	for _, line := range lines {
 		line = extractFileName(line)
@@ -172,6 +170,11 @@ func main() {
 	rawin.SetAction('\x13', func(r rune) bool {
 		if !busy {
 			busy = true
+			err = error(nil)
+			cpbText, err = clipboard.ReadAll()
+			if err != nil {
+				log.Error(err, "clipboard.ReadAll()")
+			}
 			if time.Since(refreshTime) >= refreshPeriod {
 				refreshTime = time.Now()
 				log.Info("-------------------------------------------------")
