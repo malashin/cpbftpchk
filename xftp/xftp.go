@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/jlaffaye/ftp"
@@ -56,8 +57,7 @@ func init() {
 		"path     = {!invalid!':'!'/:'!('/'$) anyRune};" +
 		"port     = digit{digit};"
 
-	rules := ptool.NewRules(urlRule)
-	p, err := rules.Parser()
+	p, err := ptool.NewBuilder().FromString(urlRule).Build()
 	if err != nil {
 		log.Panic(err, "can't compile url parser")
 		panic(err)
@@ -150,19 +150,13 @@ func ParseConnString(conn string) (*TConnStruct, error) {
 		return nil, err
 	}
 	for _, node := range tree.Links {
-		switch urlParser.ByID(node.Type) {
-		case "proto":
-			cs.Proto = node.Value
-		case "username":
-			cs.Username = node.Value
-		case "password":
-			cs.Password = node.Value
-		case "host":
-			cs.Host = node.Value
-		case "path":
-			cs.Path = node.Value
-		case "port":
-			cs.Port = node.Value
+		name := urlParser.ByID(node.Type)
+		ok, err := ptool.SetStructField(&cs, strings.Title(name), node.Value)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, fmt.Errorf("field not found %q", name)
 		}
 	}
 	// fmt.Printf("proto %q\nuser %q\npswd %q\nhost %q\npath %q\nport %q\n", cs.Proto, cs.Username, cs.Password, cs.Host, cs.Path, cs.Port)
@@ -181,60 +175,4 @@ func ParseConnString(conn string) (*TConnStruct, error) {
 		return nil, fmt.Errorf("no host or path name")
 	}
 	return &cs, nil
-	// const (
-	// 	user = iota
-	// 	password
-	// 	host
-	// 	port
-	// 	proto
-	// 	path
-	// )
-	// err := fmt.Errorf("wrong format")
-	// cs := TConnStruct{}
-	// parts := strings.Split(conn, ":")
-	// if len(parts) < 3 {
-	// 	return nil, err
-	// }
-	// if len(parts) < 4 {
-	// 	parts = append(parts, "")
-	// }
-
-	// idx := strings.LastIndex(parts[password], "@")
-	// if idx < 0 {
-	// 	return nil, err
-	// }
-	// parts = append(parts, parts[password][idx+1:])
-	// parts[password] = parts[password][:idx]
-
-	// for i := range parts {
-	// 	parts[i] = strings.TrimSpace(parts[i])
-	// }
-	// if !strings.HasPrefix(parts[host], "//") {
-	// 	return nil, err
-	// }
-	// parts[host] = parts[host][2:]
-	// if len(parts[host]) == 0 {
-	// 	return nil, err
-	// }
-	// if parts[port] == "" {
-	// 	parts[port] = "21"
-	// }
-	// if _, err := strconv.Atoi(parts[port]); err != nil {
-	// 	return nil, err
-	// }
-
-	// idx = strings.Index(parts[host], "/")
-	// if idx < 0 {
-	// 	return nil, err
-	// }
-	// parts = append(parts, parts[host][idx+1:])
-	// parts[host] = parts[host][:idx]
-
-	// cs.User = parts[user]
-	// cs.Password = parts[password]
-	// cs.Host = parts[host]
-	// cs.Path = parts[path]
-	// cs.Port = parts[port]
-	// cs.Proto = parts[proto]
-	// return &cs, nil
 }
