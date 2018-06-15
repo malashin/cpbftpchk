@@ -56,8 +56,7 @@ func init() {
 		"host     = {!invalid!':'!'/' anyRune};" +
 		"path     = {!invalid!':'!'/:'!('/'$) anyRune};" +
 		"port     = digit{digit};"
-
-	p, err := ptool.NewBuilder().FromString(urlRule).Build()
+	p, err := ptool.NewBuilder().FromString(urlRule).Entries("entry").Build()
 	if err != nil {
 		log.Panic(err, "can't compile url parser")
 		panic(err)
