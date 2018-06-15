@@ -170,8 +170,8 @@ func ParseConnString(conn string) (*TConnStruct, error) {
 			cs.Port = "22"
 		}
 	}
-	if cs.Host == "" || cs.Path == "" {
-		return nil, fmt.Errorf("no host or path name")
+	if cs.Host == "" {
+		return nil, fmt.Errorf("host name is emty")
 	}
 	return &cs, nil
 }
