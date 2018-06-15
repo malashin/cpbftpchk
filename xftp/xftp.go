@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/jlaffaye/ftp"
-	"github.com/macroblock/ptool"
+	"github.com/macroblock/ptool/pkg/ptool"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
