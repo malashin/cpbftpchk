@@ -31,11 +31,25 @@ func (o *TSftp) resolveDir(dir string) (string, error) {
 
 // Delete -
 func (o *TSftp) Delete(path string) error {
+	var err error
+	path, err = o.resolveDir(path)
+	if err != nil {
+		return err
+	}
 	return o.client.Remove(path)
 }
 
 // Rename -
 func (o *TSftp) Rename(from, to string) error {
+	var err error
+	from, err = o.resolveDir(from)
+	if err != nil {
+		return err
+	}
+	to, err = o.resolveDir(to)
+	if err != nil {
+		return err
+	}
 	return o.client.Rename(from, to)
 }
 
@@ -46,6 +60,11 @@ func (o *TSftp) Quit() error {
 
 // FileSize -
 func (o *TSftp) FileSize(path string) (int64, error) {
+	var err error
+	path, err = o.resolveDir(path)
+	if err != nil {
+		return -1, err
+	}
 	stat, err := o.client.Stat(path)
 	if err != nil {
 		return -1, err
@@ -88,11 +107,11 @@ func (o *TSftp) StorFrom(path string, r io.Reader, offset uint64) error {
 
 // ChangeDir -
 func (o *TSftp) ChangeDir(dir string) error {
-	var err error
-	o.cwd, err = o.resolveDir(dir)
+	cwd, err := o.resolveDir(dir)
 	if err != nil {
 		return err
 	}
+	o.cwd = cwd
 	return nil
 }
 
