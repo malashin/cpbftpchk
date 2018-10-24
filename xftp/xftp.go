@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/jlaffaye/ftp"
-	"github.com/macroblock/ptool/pkg/ptool"
+	"github.com/macroblock/imed/pkg/ptool"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
@@ -21,6 +21,8 @@ type IFtp interface {
 	Delete(path string) error
 	Rename(from, to string) error
 	StorFrom(path string, r io.Reader, offset uint64) error
+	ChangeDir(dir string) error
+	CurrentDir() (string, error)
 	List(path string) ([]TEntry, error)
 	Quit() error
 }
@@ -124,7 +126,12 @@ func New(conn string) (IFtp, error) {
 		}
 		c := &TSftp{}
 		c.client = client
-		// c.client.
+
+		cwd, err := c.client.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		c.cwd = cwd
 		return c, nil
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 
 	"github.com/pkg/sftp"
 )
@@ -11,6 +12,21 @@ import (
 // TSftp -
 type TSftp struct {
 	client *sftp.Client
+	cwd    string
+}
+
+func (o *TSftp) resolveDir(dir string) (string, error) {
+	if path.IsAbs(dir) {
+		return path.Clean(dir), nil
+	}
+	if o.cwd != "" && path.IsAbs(o.cwd) {
+		return path.Join(o.cwd, dir), nil
+	}
+	base, err := o.client.Getwd()
+	if err != nil {
+		return "", err
+	}
+	return path.Join(base, o.cwd, dir), nil
 }
 
 // Delete -
@@ -43,6 +59,11 @@ func (o *TSftp) StorFrom(path string, r io.Reader, offset uint64) error {
 	// if err != nil {
 	// 	return err
 	// }
+	var err error
+	path, err = o.resolveDir(path)
+	if err != nil {
+		return err
+	}
 	f, err := o.client.OpenFile(path, os.O_CREATE|os.O_WRONLY)
 	if err != nil {
 		return err
@@ -65,8 +86,28 @@ func (o *TSftp) StorFrom(path string, r io.Reader, offset uint64) error {
 	return nil
 }
 
+// ChangeDir -
+func (o *TSftp) ChangeDir(dir string) error {
+	var err error
+	o.cwd, err = o.resolveDir(dir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// CurrentDir -
+func (o *TSftp) CurrentDir() (string, error) {
+	return o.cwd, nil
+}
+
 // List -
 func (o *TSftp) List(path string) ([]TEntry, error) {
+	var err error
+	path, err = o.resolveDir(path)
+	if err != nil {
+		return nil, err
+	}
 	src, err := o.client.ReadDir(path)
 	if err != nil {
 		return nil, err
