@@ -91,6 +91,12 @@ func New(conn string) (IFtp, error) {
 		}
 		c := &TFtp{}
 		c.client = conn
+
+		err = c.ChangeDir(cs.Path)
+		if err != nil {
+			c.Quit()
+			return nil, err
+		}
 		return c, nil
 	case "sftp":
 		config := &ssh.ClientConfig{
