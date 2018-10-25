@@ -16,6 +16,15 @@ func (o *TFtp) Delete(path string) error {
 	return o.client.Delete(path)
 }
 
+// Exists -
+func (o *TFtp) Exists(path string) error {
+	_, err := o.FileSize(path)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Rename -
 func (o *TFtp) Rename(from, to string) error {
 	return o.client.Rename(from, to)

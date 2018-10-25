@@ -18,6 +18,7 @@ import (
 type IFtp interface {
 	//Close()
 	FileSize(path string) (int64, error)
+	Exists(path string) error
 	Delete(path string) error
 	Rename(from, to string) error
 	StorFrom(path string, r io.Reader, offset uint64) error
@@ -133,6 +134,11 @@ func New(conn string) (IFtp, error) {
 			return nil, err
 		}
 		c.cwd = cwd
+		err = c.ChangeDir(cs.Path)
+		if err != nil {
+			c.Quit()
+			return nil, err
+		}
 		return c, nil
 	}
 }
