@@ -115,6 +115,11 @@ func (o *TSftp) ChangeDir(dir string) error {
 	return nil
 }
 
+// ChangeDirToParent -
+func (o *TSftp) ChangeDirToParent() error {
+	return o.ChangeDir("..")
+}
+
 // CurrentDir -
 func (o *TSftp) CurrentDir() (string, error) {
 	return o.cwd, nil

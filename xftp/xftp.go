@@ -22,6 +22,7 @@ type IFtp interface {
 	Rename(from, to string) error
 	StorFrom(path string, r io.Reader, offset uint64) error
 	ChangeDir(dir string) error
+	ChangeDirToParent() error
 	CurrentDir() (string, error)
 	List(path string) ([]TEntry, error)
 	Quit() error
@@ -67,7 +68,7 @@ func init() {
 }
 
 // New -
-// conn: user:pswd@proto://host/path:port
+// conn: proto://user:pswd@host/path:port
 // proto - currently ftp or sftp only
 // all fields are necessary
 func New(conn string) (IFtp, error) {

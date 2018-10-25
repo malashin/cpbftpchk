@@ -41,6 +41,11 @@ func (o *TFtp) ChangeDir(dir string) error {
 	return o.client.ChangeDir(dir)
 }
 
+// ChangeDirToParent -
+func (o *TFtp) ChangeDirToParent() error {
+	return o.client.ChangeDirToParent()
+}
+
 // CurrentDir -
 func (o *TFtp) CurrentDir() (string, error) {
 	return o.client.CurrentDir()
