@@ -89,6 +89,31 @@ func (o *TSftp) StorFrom(path string, r io.Reader, offset uint64) error {
 	return nil
 }
 
+// RetrFrom issues a RETR FTP command to fetch the specified file from the remote
+// FTP server, the server will not send the offset first bytes of the file.
+func (o *TSftp) RetrFrom(path string, w io.Writer, offset uint64) error {
+	f, err := o.client.OpenFile(path, os.O_RDONLY)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	offs, err := f.Seek(int64(offset), 0)
+	if err != nil {
+		return err
+	}
+	if offs != int64(offset) {
+		return fmt.Errorf("Sftp Seek() problem (custom error). Search %v, but return %v", int64(offset), offs)
+	}
+
+	_, err = f.WriteTo(w)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ChangeDir -
 func (o *TSftp) ChangeDir(dir string) error {
 	err := o.Exists(dir)

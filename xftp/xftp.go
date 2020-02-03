@@ -22,6 +22,7 @@ type IFtp interface {
 	Delete(path string) error
 	Rename(from, to string) error
 	StorFrom(path string, r io.Reader, offset uint64) error
+	RetrFrom(path string, w io.Writer, offset uint64) error
 	ChangeDir(dir string) error
 	ChangeDirToParent() error
 	CurrentDir() (string, error)

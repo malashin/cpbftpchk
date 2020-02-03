@@ -45,6 +45,23 @@ func (o *TFtp) StorFrom(path string, r io.Reader, offset uint64) error {
 	return o.client.StorFrom(path, r, offset)
 }
 
+// RetrFrom issues a RETR FTP command to fetch the specified file from the remote
+// FTP server, the server will not send the offset first bytes of the file.
+func (o *TFtp) RetrFrom(path string, w io.Writer, offset uint64) error {
+	r, err := o.client.RetrFrom(path, offset)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(w, r)
+	if err != nil {
+		return err
+	}
+
+	r.Close()
+	return nil
+}
+
 // ChangeDir -
 func (o *TFtp) ChangeDir(dir string) error {
 	return o.client.ChangeDir(dir)
