@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jlaffaye/ftp"
+	// "github.com/jlaffaye/ftp"
 	"github.com/macroblock/imed/pkg/ptool"
+	"github.com/malashin/ftp"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
@@ -94,11 +95,14 @@ func New(conn string) (IFtp, error) {
 		c := &TFtp{}
 		c.client = conn
 
-		err = c.ChangeDir(cs.Path)
-		if err != nil {
-			c.Quit()
-			return nil, err
+		if cs.Path != "" {
+			err = c.ChangeDir(cs.Path)
+			if err != nil {
+				c.Quit()
+				return nil, err
+			}
 		}
+
 		return c, nil
 	case "sftp":
 		config := &ssh.ClientConfig{

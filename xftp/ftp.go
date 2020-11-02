@@ -3,7 +3,7 @@ package xftp
 import (
 	"io"
 
-	"github.com/jlaffaye/ftp"
+	"github.com/malashin/ftp"
 )
 
 // TFtp -
